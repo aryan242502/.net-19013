@@ -1,0 +1,200 @@
+**User.cs**
+
+```csharp
+using System.ComponentModel.DataAnnotations;
+
+namespace UserRegistrationApp.Models
+{
+    public class User
+    {
+        public int Id { get; set; }
+
+        [Required(ErrorMessage = "Full Name is required")]
+        [StringLength(100, MinimumLength = 3)]
+        public string FullName { get; set; }
+
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Invalid Email Address")]
+        public string Email { get; set; }
+
+        [Required(ErrorMessage = "Password is required")]
+        [DataType(DataType.Password)]
+        [StringLength(100, MinimumLength = 6)]
+        public string Password { get; set; }
+
+        [Required(ErrorMessage = "Confirm Password is required")]
+        [DataType(DataType.Password)]
+        [Compare("Password", ErrorMessage = "Password and Confirm Password must match")]
+        public string ConfirmPassword { get; set; }
+
+        [Required(ErrorMessage = "Gender is required")]
+        public string Gender { get; set; }
+
+        [Required(ErrorMessage = "Age is required")]
+        [Range(1, 120, ErrorMessage = "Age must be between 1 and 120")]
+        public int Age { get; set; }
+    }
+}
+```
+
+**UserController.cs**
+
+```csharp
+using Microsoft.AspNetCore.Mvc;
+using UserRegistrationApp.Models;
+using System.Collections.Generic;
+
+namespace UserRegistrationApp.Controllers
+{
+    public class UserController : Controller
+    {
+        private static List<User> users = new List<User>();
+
+        public IActionResult Register()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public IActionResult Register(User user)
+        {
+            if (ModelState.IsValid)
+            {
+                user.Id = users.Count + 1;
+                users.Add(user);
+                return RedirectToAction("UserList");
+            }
+            return View(user);
+        }
+
+        public IActionResult UserList()
+        {
+            return View(users);
+        }
+    }
+}
+```
+
+**Program.cs**
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddControllersWithViews();
+
+var app = builder.Build();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
+}
+
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseRouting();
+app.UseAuthorization();
+
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=User}/{action=Register}/{id?}");
+
+app.Run();
+```
+
+**_ValidationScriptsPartial.cshtml**
+
+```razor
+<environment exclude="Development">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"
+            crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js"
+            crossorigin="anonymous"></script>
+</environment>
+```
+
+**Register.cshtml**
+
+```razor
+@model UserRegistrationApp.Models.User
+@{
+    ViewData["Title"] = "User Registration";
+}
+<h2>User Registration</h2>
+<form asp-action="Register" method="post">
+    <div class="form-group">
+        <label asp-for="FullName"></label>
+        <input asp-for="FullName" class="form-control" />
+        <span asp-validation-for="FullName" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Email"></label>
+        <input asp-for="Email" class="form-control" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Password"></label>
+        <input asp-for="Password" class="form-control" />
+        <span asp-validation-for="Password" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="ConfirmPassword"></label>
+        <input asp-for="ConfirmPassword" class="form-control" />
+        <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Gender"></label>
+        <select asp-for="Gender" class="form-control">
+            <option value="">--Select Gender--</option>
+            <option>Male</option>
+            <option>Female</option>
+            <option>Other</option>
+        </select>
+        <span asp-validation-for="Gender" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Age"></label>
+        <input asp-for="Age" class="form-control" />
+        <span asp-validation-for="Age" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <input type="submit" value="Register" class="btn btn-primary" />
+    </div>
+</form>
+@await Html.PartialAsync("_ValidationScriptsPartial")
+```
+
+**UserList.cshtml**
+
+```razor
+@model IEnumerable<UserRegistrationApp.Models.User>
+@{
+    ViewData["Title"] = "Registered Users";
+}
+<h2>Registered Users</h2>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Full Name</th>
+            <th>Email</th>
+            <th>Gender</th>
+            <th>Age</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model)
+        {
+            <tr>
+                <td>@user.Id</td>
+                <td>@user.FullName</td>
+                <td>@user.Email</td>
+                <td>@user.Gender</td>
+                <td>@user.Age</td>
+            </tr>
+        }
+    </tbody>
+</table>
+```
