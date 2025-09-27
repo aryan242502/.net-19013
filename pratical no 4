@@ -1,0 +1,189 @@
+**User.cs**
+
+```csharp
+using System.ComponentModel.DataAnnotations;
+
+namespace UserLoginApp.Models
+{
+    public class User
+    {
+        public int Id { get; set; }
+
+        [Required(ErrorMessage = "Full Name is required")]
+        [StringLength(100, MinimumLength = 3)]
+        public string FullName { get; set; }
+
+        [Required(ErrorMessage = "Email is required")]
+        [EmailAddress(ErrorMessage = "Invalid Email Address")]
+        public string Email { get; set; }
+
+        [Required(ErrorMessage = "Password is required")]
+        [DataType(DataType.Password)]
+        [StringLength(100, MinimumLength = 6)]
+        public string Password { get; set; }
+
+        [Required(ErrorMessage = "Confirm Password is required")]
+        [DataType(DataType.Password)]
+        [Compare("Password", ErrorMessage = "Password and Confirm Password must match")]
+        public string ConfirmPassword { get; set; }
+
+        [Required(ErrorMessage = "Gender is required")]
+        public string Gender { get; set; }
+
+        [Required(ErrorMessage = "Age is required")]
+        [Range(1, 120, ErrorMessage = "Age must be between 1 and 120")]
+        public int Age { get; set; }
+    }
+}
+```
+
+**UserController.cs**
+
+```csharp
+using Microsoft.AspNetCore.Mvc;
+using UserLoginApp.Models;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace UserLoginApp.Controllers
+{
+    public class UserController : Controller
+    {
+        private static List<User> users = new List<User>();
+
+        public IActionResult Register()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public IActionResult Register(User user)
+        {
+            if (ModelState.IsValid)
+            {
+                users.Add(user);
+                return RedirectToAction("Login");
+            }
+            return View(user);
+        }
+
+        public IActionResult Login()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public IActionResult Login(User loginUser)
+        {
+            var user = users.FirstOrDefault(u => u.Email == loginUser.Email && u.Password == loginUser.Password);
+            if (user != null)
+            {
+                return View("LoginSuccess", user);
+            }
+            ViewData["Error"] = "Invalid Email or Password!";
+            return View();
+        }
+    }
+}
+```
+
+**Program.cs**
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddControllersWithViews();
+var app = builder.Build();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
+}
+
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseRouting();
+app.UseAuthorization();
+
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=User}/{action=Register}/{id?}");
+
+app.Run();
+```
+
+**Register.cshtml**
+
+```html
+@model UserLoginApp.Models.User
+
+<h2>User Registration</h2>
+<form asp-action="Register" method="post">
+    <div class="form-group">
+        <label asp-for="FullName"></label>
+        <input asp-for="FullName" class="form-control" />
+        <span asp-validation-for="FullName" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Email"></label>
+        <input asp-for="Email" class="form-control" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Password"></label>
+        <input asp-for="Password" type="password" class="form-control" />
+        <span asp-validation-for="Password" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="ConfirmPassword"></label>
+        <input asp-for="ConfirmPassword" type="password" class="form-control" />
+        <span asp-validation-for="ConfirmPassword" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Gender"></label>
+        <select asp-for="Gender" class="form-control">
+            <option value="">--Select Gender--</option>
+            <option>Male</option>
+            <option>Female</option>
+            <option>Other</option>
+        </select>
+        <span asp-validation-for="Gender" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Age"></label>
+        <input asp-for="Age" class="form-control" />
+        <span asp-validation-for="Age" class="text-danger"></span>
+    </div>
+    <input type="submit" value="Register" class="btn btn-primary" />
+</form>
+```
+
+**Login.cshtml**
+
+```html
+@model UserLoginApp.Models.User
+
+<h2>Login</h2>
+<form asp-action="Login" method="post">
+    <div class="form-group">
+        <label asp-for="Email"></label>
+        <input asp-for="Email" class="form-control" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Password"></label>
+        <input asp-for="Password" type="password" class="form-control" />
+        <span asp-validation-for="Password" class="text-danger"></span>
+    </div>
+    <input type="submit" value="Login" class="btn btn-primary" />
+</form>
+<span class="text-danger">@ViewData["Error"]</span>
+```
+
+**LoginSuccess.cshtml**
+
+```html
+@model UserLoginApp.Models.User
+<h2>Login Successful!</h2>
+<p>Welcome, @Model.FullName!</p>
+```
